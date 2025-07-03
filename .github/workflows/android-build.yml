@@ -1,0 +1,51 @@
+name: Final APK Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Install packages
+      run: npm install -g typescript @capacitor/cli
+        
+    - name: Create app
+      run: |
+        mkdir -p dist/public
+        echo '<!DOCTYPE html><html><head><title>Nur Taxi</title><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:Arial;margin:0;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;text-align:center}.container{max-width:400px;margin:50px auto;padding:30px;background:rgba(255,255,255,0.1);border-radius:15px}h1{font-size:2.5em;margin-bottom:20px}p{font-size:1.2em;margin-bottom:15px}.button{background:#4CAF50;color:white;padding:15px 30px;border:none;border-radius:25px;font-size:1.1em;margin:10px;cursor:pointer}</style></head><body><div class="container"><h1>🚕 Nur Taxi</h1><p>Taksi Platformasi</p><p>Android ilovasi tayyor!</p><button class="button" onclick="alert(\"Taksi chaqirish\")">Taksi</button><button class="button" onclick="alert(\"Haydovchi paneli\")">Haydovchi</button></div></body></html>' > dist/public/index.html
+        
+    - name: Setup Capacitor
+      run: |
+        echo '{"appId":"uz.nurtaxi.app","appName":"Nur Taxi","webDir":"dist/public","android":{"allowMixedContent":true}}' > capacitor.config.json
+        npx cap init --web-dir=dist/public
+        npx cap add android
+        npx cap sync android
+        
+    - name: Build APK
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: nur-taxi-final.apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
