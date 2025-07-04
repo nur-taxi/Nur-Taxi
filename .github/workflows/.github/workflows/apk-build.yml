@@ -1,0 +1,57 @@
+name: APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+        
+    - name: Install dependencies
+      run: |
+        npm install
+        npm install -g @capacitor/cli
+        
+    - name: Build project
+      run: npm run build
+        
+    - name: Create capacitor config
+      run: |
+        echo '{"appId":"uz.nurtaxi.app","appName":"Nur Taxi","webDir":"dist/public","android":{"allowMixedContent":true}}' > capacitor.config.json
+        
+    - name: Initialize Capacitor
+      run: |
+        npx cap add android
+        npx cap sync android
+        
+    - name: Build APK
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: nur-taxi.apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
