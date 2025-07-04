@@ -1,0 +1,57 @@
+name: APK Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Create package-lock.json
+      run: |
+        echo '{
+          "name": "rest-express",
+          "version": "1.0.0",
+          "lockfileVersion": 3,
+          "requires": true,
+          "packages": {
+            "": {
+              "name": "rest-express",
+              "version": "1.0.0",
+              "license": "MIT"
+            }
+          }
+        }' > package-lock.json
+        
+    - run: npm install
+    - run: npm install -g @capacitor/cli
+    - run: npm run build
+    
+    - name: Create capacitor config
+      run: |
+        echo '{
+          "appId": "uz.nurtaxi.app",
+          "appName": "Nur Taxi",
+          "webDir": "dist/public"
+        }' > capacitor.config.json
+        
+    - run: npx cap add android
+    - run: npx cap sync android
+    - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: nur-taxi.apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
