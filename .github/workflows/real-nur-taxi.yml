@@ -1,0 +1,47 @@
+name: Real Nur Taxi APK
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Setup Java 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        npm install -g @capacitor/cli
+        
+    - name: Build Vite frontend
+      run: npm run build
+        
+    - name: Setup Capacitor Android
+      run: |
+        npx cap add android
+        npx cap sync android
+        
+    - name: Build Android APK
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug
+        
+    - name: Upload Real APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: nur-taxi-platform.apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
