@@ -1,0 +1,41 @@
+name: Mobile App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Create lock file
+      run: echo '{"name":"rest-express","version":"1.0.0","lockfileVersion":3,"requires":true,"packages":{"":{"name":"rest-express","version":"1.0.0","license":"MIT"}}}' > package-lock.json
+        
+    - run: npm install --no-package-lock
+    - run: npm install -g @capacitor/cli
+    
+    - name: Build app
+      run: |
+        mkdir -p dist/public
+        cp -r client/* dist/public/
+        
+    - run: echo '{"appId":"uz.nurtaxi.app","appName":"Nur Taxi","webDir":"dist/public"}' > capacitor.config.json
+        
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - run: npx cap add android
+    - run: npx cap sync android
+    - run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+        
+    - uses: actions/upload-artifact@v4
+      with:
+        name: nur-taxi-mobile.apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
